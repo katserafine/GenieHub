@@ -12,7 +12,22 @@ Code repo for my ideal integration of Django and React - set up with Docker Comp
 - **npm** v6.13.7
 - **sqlite** default w/ django (maybe use MySQL for prod?)
 
-## Setting up the app
+## Setup from git clone
+In your terminal, run:
+    
+    git clone https://github.com/dgonzo27/react-django-docker-boiler.git
+    
+Build and Run the app:
+
+    # Navigate into directory
+    cd react-django-docker-boiler
+    
+    # Build and Run
+    docker-compose up
+    
+Results seen at http://localhost:3000
+
+## Reasons to use
 
 * I want to start out with a clear separation between the frontend and backend
 * I want to focus on server-side logic to ensure this app and CRUD API can be scalable for B2B products
