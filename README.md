@@ -1,6 +1,10 @@
-# Docker + Django + React App Boiler Plate
+# TechGenies Intranet/Hub Web Application
+### April 12th, 2020 - Dylan Gonzales (Full-Stack Developer)
 
-Code repo for my ideal integration of Django and React - set up with Docker Compose
+This is the start of my README.md for the internal TechGenies Intranet/Hub Web Application.
+
+Presumably, this will be adapted and changed overtime; I'll just be listing my thoughts, plans, and 
+architectural designs for the time being.
 
 ## Dependencies
 
@@ -27,287 +31,148 @@ Build and Run the app:
     
 Results seen at http://localhost:3000
 
-## Reasons to use
-
-* I want to start out with a clear separation between the frontend and backend
-* I want to focus on server-side logic to ensure this app and CRUD API can be scalable for B2B products
-* With my development experience inheriting Genetics Maven, static javascript assets are being used in Django views and I cannot use hot-reloading
-* ^ That means I have to run my build script `npm run build-development` that takes 1-2 minutes for the webpack to recompile everytime I change any react code - SUPER FRUSTRATING FOR INEXPERIENCED REACT DEVS!
-
-## Historical Setup from Scratch
-This is just to provide an understanding of how this repo got to where it is.  Don't do this if you're cloning the repo, but this should work if you want to build your own locally on your machine from scratch.
+## Deploy as a production app
 
 ### Steps for Success
-1. Create django web-app that runs in Docker container
-2. Create React app that runs in Docker container
-3. Run the two containers in parallel as services with docker-compose
-4. Connect frontend proxy to backend host (serve backend API)
+1. Set up Django to use WhiteNoise for serving static files in production
+2. Create a production Dockerfile that combines the frontend and backend services into a single app
+3. Create a new AWS app to deploy to? Heroku?
+4. Configure app to deploy a Docker image to AWS ECR
 
-### 1. Create django web-app
-Navigate to clean/desired app directory.  Make directory for app, and backend dir within app dir:
+### 1. Set up Django to use WhiteNoise for prod
+Create a settings file for each environment, all of which inherit from some base settings, then determine which settings file to use with an environment variable.  
 
-    mkdir AppName
-    cd AppName
-    mkdir backend
+In `backend/genie_hub`, create a settings folder with __init__.py inside:
+
     cd backend
-
-Make requirements.txt for backend dir (django only or add DRF if you know you'll use it later)
-
-    vim requirements.txt
-
-    django
-
-Add Dockerfile in backend directory:
-
-    # Use an official Python runtime as a parent image
-    FROM python:3.7
-
-    # Adding backend directory to make absolute filepaths consistent across services
-    WORKDIR /app/backend
-
-    # Install Python dependencies
-    COPY requirements.txt /app/backend
-    RUN pip3 install --upgrade pip -r requirements.txt
-
-    # Add the rest of the code
-    COPY . /app/backend
-
-    # Make port 8000 available for the app
-    EXPOSE 8000
-
-    CMD python3 manage.py runserver 0.0.0.0:8000
-
-From terminal, navigate up a directory:
-
-    cd ..
-
-Build image:
-
-    docker build -t [DockerHubUsernameIfYouWant/]backend:latest backend
-
-Create django project command at `.` directory:
-
-    docker run -v $PWD/backend:/app/backend backend:latest django-admin startproject genie_hub .
-
-Run image at port 8000:8000:
-
-    docker run -v $PWD/backend:/app/backend -p 8000:8000 backend:latest
-
-The app should be up and running on http://localhost:8000.  To stop the app, `CMD + t` for a new terminal tab, `docker ps` to see running containers, copy ID and run:
-
-    docker stop [containerID]
-
-### 2. Create react web-app
-Similar to backend, make frontend directory:
-
-    ls
-    # should list your backend directory
-    mkdir frontend
-    cd frontend
-
-Create a Dockerfile with some lines commented out since the files don't exist yet:
-
-    # Use an official node runtime as a parent image
-    FROM node:13.12.0
-
-    WORKDIR /app/
-
-    # Install dependencies
-    # COPY package.json yarn.lock /app/
-
-    # RUN npm install
-
-    # Add rest of the client code
-    COPY ./app/
-
-    EXPOSE 3000
-
-    # CMD npm start
-
-Change back to root directory:
-
-    cd ..
-
-Build image:
-
-    docker build -t [DockerHubUsernameIfYouWant/]frontend:latest frontend
-
-Create React App command:
-
-    docker run -v $PWD/frontend:/app frontend:latest npx create-react-app genie-den
-
-Move content in local /genie-den react dir to container dir, add frontend dir to .gitignore and local directory for genie-den:
-
-    mv frontend/genie-den/* frontend/genie-den/ .gitignore frontend/ && rmdir frontend/genie-den
-
-Run image at port 3000:3000
-
-    docker run -v $PWD/frontend:app -p 3000:3000 frontend:latest npm start
-
-Make sure the app is running on http://localhost:3000
-
-Go back to the Dockerfile in /frontend and uncomment any commented lines so that the next build will include all the commands
-
-### 3. Set up docker-compose services for frontend and backend
-In root directory, add docker-compose.yml file:
-
-    version: "3"
-    services:
-    	backend:
-    		build: ./backend
-		volumes:
-			- ./backend:/app/backend
-		ports:
-			- "8000:8000"
-		stdin_open: true
-		tty: true
-		command: python3 manage.py runserver 0.0.0.0:8000
-	frontend:
-		build: ./frontend
-		volumes: 
-			- ./frontend:/app
-			- /app/node_modules
-		ports:
-			- "3000:3000"
-		environment:
-			- NODE_ENV=development
-		depends_on:
-			- backend
-		command: npm start
-
-From root directory, running `docker-compose up` should build and start both services in parallel - http://localhost:8000 and http://localhost:3000
-
-### 4. Connect Django and React
-In a tutorial I found online, a simple JsonResponse with Django returns a given character count for a user entered string.  The frontend then displays the number of characters.  This is a base example for how the API will communicate to with React using the 
-npm package `axios`.  
-
-Here is how that was configured...
-
-Create a _django app_ inside the django project (from root directory, not backend):
-
-    docker-compose run --rm backend python3 manage.py startapp char_count
-
-Create API response in new django app:
-
-    cd backend/char_count/
-    vim views.py
-
-    from django.http import JsonResponse
-
-    def char_count(request):
-      '''
-      Return the character count for a given text string
-      '''
-      
-      text = request.GET.get("text", "")
-      return JsonResponse({"count": len(text)})
-
-Add new django app to _INSTALLED_APP_ section of the django project settings.py:
-
-    cd ..
     cd genie_hub
-    vim settings.py
+    mkdir settings
+    cd settings
+    TOUCH __init__.py
 
-    INSTALLED_APPS = [
-        'char_count.apps.CharCountConfig',
-    ]
+Move the existing `settings.py` file into it and rename it `base.py`.  
 
-    OR
+To make sure I don't accidentally deploy with unsafe settings, cut the following code from `base.py`, and paste it into a newly-created `development.py`:
 
-    INSTALLED_APPS = [
-        'char_count',
-    ]
+    # Quick-start development settings -unsuitable for production
+    # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
-Add url pattern for _char_count_ to django project urls.py:
+    # SECURITY WARNING: keep the secret key used in production secret!
+    SECRET_KEY = "blah blah blah"
 
-    vim urls.py
-
-    from django.contrib import admin
-    from django.urls import path
-    from char_count.views import char_count
-
-    urlpatterns = [
-      path('admin/', admin.site.urls),
-      path('char_count', char_count, name='char_count'),
-    ]
-
-Running the app and going to localhost:8000/characters?text=hello world should return a json count of 11
-
-Update configs in backend and frontend to handle networking errors:
-
-    vim settings.py
+    # SECURITY WARNING: don't run with debug turned on in production!
+    DEBUG = True
 
     ALLOWED_HOSTS = ["backend"]
 
-    cd ..
-    cd ..
-    cd frontend
-    vim package.json
+At the top of the development.py file, add the line:
 
-    # End of file
-      },
-      "proxy": "http://backend:8000"
-    }
+    genie_hub.settings.base import * 
 
-Install npm package for `axios`:
+Update `BASE_DIR` in `base.py` to point to the correct directory, which is now one level higher:
 
-    # Navigate back to root dir
-    cd ..
-    
-    # Install axios
-    docker-compose run --rm frontend npm add axios
+    BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 
-    # Stop services
-    docker-compose down
+Update default in `backend/genie_hub/wsgi.py` to `genie_hub.settings.base` and add the following to the `backend` service in `docker-compose.yml`:
 
-    # Rebuild
-    docker-compose up --build
+    environment:
+      - DJANGO_SETTINGS_MODULE=genie_hub.settings.development
 
-Add some js to App.js:
+Create production.py settings in settings directory:
 
-    # Navigate to App.js
-    cd frontend
-    cd src
-    vim App.js
+    import os
+    from genie_hub.settings.base import *
 
-    # Full code:
-    import React from 'react';
-    import axios from 'axios';
-    import './App.css'
+    SECRET_KEY = os.environ.get("SECRET_KEY")
+    DEBUG = False
+    ALLOWED_HOSTS = [os.environ.get("PRODUCTION_HOST")]
 
-    function handleSubmit(event) {
-        const text = document.querySelector('#char-input').value
+The `SECRET_KEY` should be some long string of random characters (last pass generated) and save it as an environment/config variable away from source control
 
-        axios
-          .get(`/char_count?text=${text}`).then(({data}) => {
-              document.querySelector('#char-count').textContent = `${data.count} characters!`
-          })
-          .catch(err => console.log(err))
-    }
+To enable WhiteNoise to serve frontend assets, add the following to production.py:
 
-    function App() {
-        return (
-          <div className="App">
-            <div>
-              <label htmlFor='char-input'>How many characters does</label>
-              <input id='char-input' type='text />
-              <button onClick={handleSubmit}>have?</button>
-            </div>
-            <div>
-              <h3 id='char-count'></h3>
-            </div>
-          </div>
-        );
-    }
+    INSTALLED_APPS.extend(["whitenoise.runserver_nostatic"])
 
-    export default App;
+    # Must insert after SecurityMiddleware, which is first in settings/common.py
+    MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
 
-Save, back to root directory and run it:
+    TEMPLATES[0]["DIRS"] = [os.path.join(BASE_DIR, "../", "frontend", "build")]
 
-    cd ..
-    cd ..
-    docker-compose up
+    STATICFILES_DIRS = [os.path.join(BASE_DIR, "../", "frontend", "build", "static")]
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
-Go to http://localhost:3000 and boom.
+    STATIC_URL = "/static/"
+    WHITENOISE_ROOT = os.path.join(BASE_DIR, "../", "frontend", "build", "root")
 
-If you're comfortable with Django and React it should be pretty clear how to take it from here.
+* `TEMPLATES`: directories with templates or html files
+* `STATICFILES_DIRS`: directory where Django can find html, js, css, and other static assets
+* `STATIC_ROOT`: directory to which Django will move the static assets and from which it will serve them when the app is running
+* `WHITENOISE_ROOT`: directory where WhiteNoise can find all **non-html** static assets
+
+Make Django aware of the path `/`, because right now it only knows about `/admin` and `/char_count`. 
+
+Update `/backend/genie_hub/urls.py` to look like the following:
+
+    from django.contrib import admin
+    from django.urls import path, re_path
+    from django.views.generic import TemplateView
+    from char_count.views import char_count
+
+    urlpatterns = [
+      path("admin/", admin.site.urls),
+      path("char_count", char_count, name="char_count"),
+      re_path(".*", TemplateView.as_view(template_name="index.html")),
+    ]
+
+Adding `.*` to the regex path tells Django to respond to any request that don't contain explicit instructions by sending the user `index.html`.  In a dev env, React's Webpack server will still handle calls to `/` (and any path other than the two defined above), but in prod, when there's no Webpack server, Django will serve `index.html` from the static files directory.  Using `.*` instead of a specific path gives the freedom to define as many paths as we want for the frontend to handle (with React Router for example) without having to update Django's URLs list.
+
+Create production Dockerfile:
+
+    FROM python:3.7
+
+    # Install curl, node and yarn
+    RUN apt-get -y install curl \
+      && curl -sL https://deb.nodesource.com/setup_13.10 | bash \
+      && apt-get install nodejs
+      && curl -o- -L https://yarnpkg.com/install.sh | bash
+
+    WORKDIR /app/backend
+
+    # Install Python dependencies
+    COPY ./backend/requirements.txt /app/backend/
+    RUN pip3 install --upgrade pip -r requirements.txt
+
+    # Install JS dependencies
+    WORKDIR /app/frontend
+
+    COPY ./frontend/package.json ./frontend/yarn.lock /app/frontend/
+    RUN $HOME/ .yarn/bin/yarn install
+
+    # Add the rest of the code
+    COPY ./app/
+
+    # Build static files
+    RUN $HOME/ .yarn/bin/yarn build
+
+    # Have to move all static files other than index.html to root/ for whitenoise middleware
+    WORKDIR /app/frontend/build
+
+    RUN mkdir root && mv *.ico *.js *.json root
+
+    # Collect static files
+    RUN mkdir /app/backend/staticfiles
+
+    WORKDIR /app
+
+    # SECRET_KEY is only included here to avoid raising an error when generating static files
+    RUN DJANGO_SETTINGS_MODULE=genie_hub.settings.production \
+    SECRET_KEY=somethingsupersecret \
+    python3 backend/manage.py collectstatic --noinput
+
+
+    EXPOSE $PORT
+
+    CMD python3 backend/manage.py runserver 0.0.0.0:$PORT
+
+

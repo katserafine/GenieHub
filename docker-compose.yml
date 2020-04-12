@@ -6,6 +6,8 @@ services:
       - ./backend:/app/backend
     ports:
       - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=genie_hub.settings.development
     stdin_open: true
     tty: true
     command: python3 manage.py runserver 0.0.0.0:8000
