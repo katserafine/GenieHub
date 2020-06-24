@@ -6,6 +6,7 @@ import './App.css';
 
 function handleClick(event) {
 
+  //none of this exist anymore
   axios
     .get(`api/Users/`).then((response) => { 
       //setResponseData(response.data)
