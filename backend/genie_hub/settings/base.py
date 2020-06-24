@@ -18,13 +18,15 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 # Application definition
 
 INSTALLED_APPS = [
-    "char_count.apps.CharCountConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "Login.apps.LoginConfig",
+    "Users.apps.UsersConfig",
+    "rest_framework",
 ]
 
 MIDDLEWARE = [
