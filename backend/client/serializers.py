@@ -1,28 +1,23 @@
 from rest_framework import serializers
-from .models import  client, project, projectWorker, leadContact
+from .models import  Client, project, projectWorker, leadContact
 
 #add validation?
 
-class clientSerializer(serializers.ModelSerializer):
+from datetime import datetime, date, timedelta
+from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from logging import getLogger
+
+
+
+logger = getLogger("client.serializers")
+
+class ClientSerializer(serializers.ModelSerializer):
     class Meta:
-        model = client
-        fields = ('id', 'name', )'street', 'city', 'zipcode', 'state', 'country')
-
-
-
-class projectSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = project
+        model = Client
         fields = ('id', 'name')
+        depth = 1
 
 
-class leadContactSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = leadContact
-        fields = ('id', 'name', 'phone', 'email')
 
-
-class projectWorkerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = projectWorker
-        fields = ('id', 'pName', 'wName')

@@ -1,2 +1,5 @@
-django
-djangorestframework
+django==3.0.7
+djangorestframework==3.11.0
+django-modeltranslation==0.15.0
+django-cors-headers
+djangorestframework-jwt
