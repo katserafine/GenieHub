@@ -61,4 +61,3 @@ Results seen at http://localhost:3000
     
     docker-compose run --rm backend python3 manage.py startapp nameOfApp
 
-
