@@ -6,7 +6,7 @@ This is the start of my README.md for the internal TechGenies Intranet/Hub Web A
 Presumably, this will be adapted and changed overtime; I'll just be listing my thoughts, plans, and 
 architectural designs for the time being.
 
-I'm back bitches
+
 ## Dependencies
 
 - Requires [Docker](https://docs.docker.com/docker-for-mac/install/)
